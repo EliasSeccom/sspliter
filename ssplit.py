@@ -102,9 +102,9 @@ def split(data,split):
 #####
 def writeChuck(data,distCtr,splitCtr,extension):
     # Write file
-    saveFile(tmpPath + 'P' + str(distCtr) + str(splitCtr) + '.' + extension, data)
+    saveFile(path.join(tmpPath, 'P' + str(distCtr) + str(splitCtr) + '.' + extension), data)
     hash = generateHashFromData(data)
-    appendFile(tmpPath + specFile, str(distCtr) + ";" + str(splitCtr) + ";" + extension + ";" + str(hash) + "\n")
+    appendFile(path.join(tmpPath, specFile), str(distCtr) + ";" + str(splitCtr) + ";" + extension + ";" + str(hash) + "\n")
 
 #####
 #  Hashing
@@ -192,12 +192,12 @@ def createSplits():
             shutil.move(tmpPath + ident + "nonce" , dist_path)
 
         # Copy  spec config
-        shutil.copy(tmpPath + specFile, dist_path)
+        shutil.copy(path.join(tmpPath, specFile), dist_path)
 
         # Generate archive
         root_path=os.getcwd()
         os.chdir(dist_path)
-        archive = py7zr.SevenZipFile("../../" + str(i) + '.ss', 'w')
+        archive = py7zr.SevenZipFile(path.join("..", "..", str(i) + '.ss'), 'w')
         archive.writeall(".")
         archive.close()
         os.chdir(root_path)
@@ -272,7 +272,7 @@ def readSpecFile():
     files={}
     if doesFileExist(tmpPath + specFile):
         log("i", "Reading spec file")
-        f = open(tmpPath + specFile, "r")
+        f = open(path.join(tmpPath, specFile), "r")
         for line in f:
             array=line.rstrip().split(';')
 
@@ -298,9 +298,9 @@ def readSpecFile():
 def validateFiles(files):
     returnFiles={}
     for filename in files:
-        if doesFileExist(tmpPath + filename):
+        if doesFileExist(path.join(tmpPath, filename)):
             log("i", "Validating part [" + filename + "]")
-            data = readFile(tmpPath + filename)
+            data = readFile(path.join(tmpPath, filename))
             if generateHashFromData(data) == files[filename]:
                 log("i","Part [" + filename + "] is valid")
                 returnFiles[filename] = data
