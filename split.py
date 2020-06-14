@@ -1,5 +1,24 @@
 #!/bin/python3
 ##########################################################
+#
+# Split Secret
+# Copyright (C) 2020  Elias Summermatter
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>
+##########################################################
+
+
 import argon2
 import hashlib
 from Crypto.Cipher import AES
@@ -15,7 +34,7 @@ import math
 
 
 argon_time=200
-argon_memory=100  #100000
+argon_memory=100000
 distribution=3
 redundancy=2
 passphrase=""
@@ -29,6 +48,16 @@ def getChucksize(data):
 def comandlineHelp(error = False):
     if (error):
         print("ERROR: " + error)
+    print(sys.argv[0] + " [mode] [options] [file1] [file2]..." )
+    print("Mode:")
+    print("  -e: Create new secret split")
+    print("  -d: Decrypt secret from splits")
+    print("Options:")
+    print("  -p [passphrase]: Optional Passphrase")
+    print("  --argon-time [rounds]: Custom round count for argon [default" + str(argon_time) + "]")
+    print("  --argon-memory [kb]: Custom amount of memory needed for argon [default 100000]")
+    print("  --distribution [number]: Create new secret split")
+    print("  --redundancy [number]: Create new secret split")
     exit(99)
 
 def log(level,message):
