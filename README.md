@@ -22,7 +22,6 @@ Following cryptographic functions are used:
 2. `pipenv install`  
 3. `pipenv shell`  
 
-
 ## Warranty/Licence
 ### SSplit  
 
