@@ -1,4 +1,5 @@
-#!/bin/python3
+#!/usr/bin/python3
+""" SSpliter main code"""
 #############################################################################
 #
 # SSpliter
@@ -19,150 +20,136 @@
 #
 #############################################################################
 
-#####
-# Imports
-#####
-import argon2
+
 import hashlib
-from Crypto.Cipher import AES
-from Crypto.Random import get_random_bytes
-from base64 import b64encode
-from base64 import b64decode
+import math
 import os
 from os import path
 import shutil
-import py7zr
 import sys
-import math
+from base64 import b64decode
+from base64 import b64encode
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+import argon2 # pylint: disable=E0401
+import py7zr # pylint: disable=E0401
 
 #####
 # Initial default values
 #####
-argon_time=200
-argon_memory=100000
-distribution=3
-redundancy=2
-tmpPath="./tmp/"
-specFile="spec"
+ARGON_TIME = 200
+ARGON_MEMORY = 100000
+DISTRIBUTION = 3
+REDUNDANCY = 2
+TMPPATH = "./tmp/"
+SPECFILE = "spec"
 
 #####
 # Values
 #####
-passphrase=""
-salt=""
+PASSPHRASE = ""
 
 
-
-#####
-# Commandline helper function
-#####
-def commandlineHelp(error = False):
-    if (error):
+def command_line_help(error=False):
+    """Prints command-line help"""
+    if error:
         print("--------------------------------------------")
         print("ERROR: " + error)
         print("--------------------------------------------")
-    print(sys.argv[0] + " [mode] [options] [file1] [file2]..." )
+    print(sys.argv[0] + " [mode] [options] [file1] [file2]...")
     print("Mode:")
     print("  -e: Create new secret split")
     print("  -d: Decrypt secret from splits")
     print("Options:")
     print("  -p [passphrase]: Optional Passphrase")
-    print("  --argon-time [rounds]: Custom round count for argon [default " + str(argon_time) + "]")
-    print("  --argon-memory [kb]: Custom amount of memory needed for argon [default " + str(argon_memory) + "]")
-    print("  --distribution [number]: Specifies the count of the splits which are generated [default " + str(distribution) + "]")
-    print("  --redundancy [number]: Specifies how many splits are required to decrypt the secret [default " + str(redundancy) + "]")
-    exit(99)
+    print("  --argon-time [rounds]: Custom round count for argon [default " + str(ARGON_TIME) + "]")
+    print("  --argon-memory [kb]: Custom amount of memory needed for argon [default " + str(ARGON_MEMORY) + "]")
+    print("  --distribution [number]: Specifies the count of the splits which are generated [default " + str(
+        DISTRIBUTION) + "]")
+    print("  --redundancy [number]: Specifies how many splits are required to decrypt the secret [default " + str(
+        REDUNDANCY) + "]")
+    sys.exit(99)
 
-#####
-# Logging
-#####
-def log(level,message):
+
+def log(level, message):
+    """Prints log messages"""
     if level == "i":
         print("INFO: " + message)
     elif level == "w":
         print("WARNING: " + message)
     elif level == "e":
         print("ERROR: " + message)
-        exit(99)
+        sys.exit(99)
 
-#####
-# Calculate chuck size
-#####
-def getChucksize(data):
-    return len(data)/redundancy
 
-#####
-# Split data
-#####
-def split(data,split):
-    chucksize=math.ceil(getChucksize(data))
-    return data[split * chucksize: (split + 1) * chucksize]
+def get_chuck_size(data):
+    """ Takes data and returns chucksize"""
+    return len(data) / REDUNDANCY
 
-#####
-# Writing down a chuck
-#####
-def writeChuck(data,distCtr,splitCtr,extension):
+
+def split(data, split_nr):
+    """Split data"""
+    chucksize = math.ceil(get_chuck_size(data))
+    return data[split_nr * chucksize: (split_nr + 1) * chucksize]
+
+
+def write_chuck(data, dist_ctr, split_ctr, extension):
+    """Writing down a chuck"""
     # Write file
-    saveFile(path.join(tmpPath, 'P' + str(distCtr) + str(splitCtr) + '.' + extension), data)
-    hash = generateHashFromData(data)
-    appendFile(path.join(tmpPath, specFile), str(distCtr) + ";" + str(splitCtr) + ";" + extension + ";" + str(hash) + "\n")
+    save_file(path.join(TMPPATH, 'P' + str(dist_ctr) + str(split_ctr) + '.' + extension), data)
+    file_hash = generate_hash_from_data(data)
+    append_file(path.join(TMPPATH, SPECFILE),
+                str(dist_ctr) + ";" + str(split_ctr) + ";" + extension + ";" + str(file_hash) + "\n")
 
-#####
-#  Hashing
-#####
-def generateHashFromData(data):
+
+def generate_hash_from_data(data):
+    """Takes data and returns sha256 hash in hex"""
     return hashlib.sha256(data).digest().hex()
 
-#####
-# Append file
-#####
-def appendFile(file ,data):
-    f=open(file, "a+")
-    f.write(data)
-    f.close()
 
-#####
-# Generate spec file
-#####
-def basicConfig(salt):
-    log("i","Writing config File....")
-    filename, file_extension = os.path.splitext(filePath[0])
-    f=open(tmpPath + specFile, "a+")
-    f.write(str(distribution)+ ";" + str(redundancy) + ";" + str(salt) + ";" + str(argon_time) + ";" + str(argon_memory) + ";" + file_extension + "\n")
-    f.close()
+def append_file(file_path, data):
+    """Append data to given file"""
+    file = open(file_path, "a+")
+    file.write(data)
+    file.close()
 
-#####
-# Calculate optional distribution of parts
-#####
-def calcuateDistribution(part):
-    log("i","Calculating secret distribution")
-    returnValue = []
-    for i in range(0,redundancy):
-        returnValue.append((part+i) % distribution)
-    return returnValue
 
-#####
-# Cleanup
-#####
-def cleanUpWorking():
-    shutil.rmtree(tmpPath, ignore_errors=True)
+def basic_config(salt):
+    """Write config to spec file"""
+    log("i", "Writing config File....")
+    _, file_extension = os.path.splitext(FILE_PATH[0])
+    data = str(DISTRIBUTION) + ";" + str(REDUNDANCY) + ";" + str(salt) + ";" + str(ARGON_TIME) + ";" + str(
+        ARGON_MEMORY) + ";" + file_extension + "\n"
+    append_file(path.join(TMPPATH, SPECFILE), data)
 
-#####
-# Salt generation
-#####
-def generateRandumSalt():
+
+def calculate_distribution(part):
+    """Calculate optional distribution of parts"""
+    log("i", "Calculating secret distribution")
+    return_value = []
+    for i in range(0, REDUNDANCY):
+        return_value.append((part + i) % DISTRIBUTION)
+    return return_value
+
+
+def clean_up_working():
+    """cleanup working dir"""
+    shutil.rmtree(TMPPATH, ignore_errors=True)
+
+
+def generate_random_salt():
+    """returns crypto secure random salt"""
     return b64encode(get_random_bytes(15)).decode("utf-8")
 
-#####
-# Keys generation function
-#####
-def generateKeys(key,salt, time, memory, distribution):
-    log("i","Generating keys....")
-    keys=[]
+
+def generate_keys(key, salt, time, memory, distribution):
+    """ generate and derive keys for encryption"""
+    log("i", "Generating keys....")
+    keys = []
     keys.append(argon2.argon2_hash(key, salt, t=time, m=memory))
 
     # Derive keys from Main Argon Key
-    for i in range(0,distribution):
+    for i in range(0, distribution):
         keys.append(hashlib.sha256(keys[i]).digest())
 
     # Remove argon base key
@@ -170,301 +157,288 @@ def generateKeys(key,salt, time, memory, distribution):
 
     return keys
 
-#####
-# Create splits
-#####
-def createSplits():
-    copied={}
-    log("i","Split secret!")
-    for i in range(0,distribution):
-        log("i",'Generating secret split [' + str(i) + '.ss]!')
-        dist_path=tmpPath + str(i)
+
+def create_splits():
+    """ Distributes encrypted data. Package and compress parts to archive"""
+    copied = {}
+    log("i", "Split secret!")
+    for i in range(0, DISTRIBUTION):
+        log("i", 'Generating secret split [' + str(i) + '.ss]!')
+        dist_path = TMPPATH + str(i)
         os.mkdir(dist_path)
 
         # Distribute parts
-        for l in calcuateDistribution(i):
-            if l not in copied.keys():
-                copied[l] = 0
+        for part in calculate_distribution(i):
+            if part not in copied.keys():
+                copied[part] = 0
             else:
-                copied[l] += 1
-            ident="P" + str(l) + str(copied[l]) + "."
-            shutil.move(tmpPath + ident + "cipher", dist_path)
-            shutil.move(tmpPath + ident + "tag" , dist_path)
-            shutil.move(tmpPath + ident + "nonce" , dist_path)
+                copied[part] += 1
+            ident = "P" + str(part) + str(copied[part]) + "."
+            shutil.move(TMPPATH + ident + "cipher", dist_path)
+            shutil.move(TMPPATH + ident + "tag", dist_path)
+            shutil.move(TMPPATH + ident + "nonce", dist_path)
 
         # Copy  spec config
-        shutil.copy(path.join(tmpPath, specFile), dist_path)
+        shutil.copy(path.join(TMPPATH, SPECFILE), dist_path)
 
         # Generate archive
-        root_path=os.getcwd()
+        root_path = os.getcwd()
         os.chdir(dist_path)
         archive = py7zr.SevenZipFile(path.join("..", "..", str(i) + '.ss'), 'w')
         archive.writeall(".")
         archive.close()
         os.chdir(root_path)
 
-#####
-# Read a file
-#####
-def readFile(filePath):
-    log("i","Reading [" + filePath + "]...")
-    file = open(filePath, "rb")
-    data=file.read()
+
+def read_file(file_path):
+    """ Takes file path and return the binary content of file"""
+    log("i", "Reading [" + file_path + "]...")
+    file = open(file_path, "rb")
+    data = file.read()
     file.close()
     return data
 
-#####
-# Encrypt the secret
-#####
-def encryptSecret(keys, data, splitsCount):
-    distribution_ctr=0
-    log("i","Encrypt file")
+
+def encrypt_data(keys, data, split_count):
+    """Takes key and data and writes encrypted chuncks"""
+    distribution_ctr = 0
+    log("i", "Encrypt file")
     for i in keys:
         if len(i) != 32:
             continue
-        cipher = AES.new(i, AES.MODE_GCM)
-        ciphertext, tag = cipher.encrypt_and_digest(data)
+        cipher = AES.new(i, AES.MODE_GCM) # pylint: disable=E1101
+        ciphertext, tag = cipher.encrypt_and_digest(data) # pylint: disable=E1101
 
         # Split into chucks
-        for l in range(0,splitsCount):
-            writeChuck(split(b64encode(ciphertext),l), distribution_ctr, l, "cipher")
-            writeChuck(split(b64encode(tag),l), distribution_ctr, l, "tag" )
-            writeChuck(split(b64encode(cipher.nonce),l), distribution_ctr, l, "nonce" )
+        for count in range(0, split_count):
+            write_chuck(split(b64encode(ciphertext), count), distribution_ctr, count, "cipher")
+            write_chuck(split(b64encode(tag), count), distribution_ctr, count, "tag")
+            write_chuck(split(b64encode(cipher.nonce), count), distribution_ctr, count, "nonce") # pylint: disable=E1101
 
         # Increase Distribution ctr
-        distribution_ctr+=1
+        distribution_ctr += 1
 
-#####
-# Check for existing file
-#####
-def doesFileExist(file_path):
+
+def does_file_exist(file_path):
+    """ Takes file path returns true if path is valid"""
     return path.exists(file_path)
 
-#####
-# Preparing directory for extraction
-#####
-def makeEnvReady():
-    cleanUpWorking()
-    os.mkdir(tmpPath)
 
-#####
-# Extract files
-#####
-def unpackFiles():
-    for file in filePath:
+def prepare_env():
+    """Preparing directory for extraction"""
+    clean_up_working()
+    os.mkdir(TMPPATH)
+
+
+def extract_files():
+    """ extract the file """
+    for file in FILE_PATH:
         log("i", "Unpacking file [" + file + "]")
         try:
             archive = py7zr.SevenZipFile(file, mode='r')
-            archive.extractall(path=tmpPath)
+            archive.extractall(path=TMPPATH)
             archive.close()
-        except:
+        except:  # pylint: disable=W0702
             log("e", "Error while extracting archive [" + file + "]")
 
-#####
-# Parsing configfile
-#####
-def readSpecFile():
-    validConfig=False
-    distribution=""
-    redundancy= ""
-    salt=""
-    argon_time=""
-    argon_memory=""
-    files={}
-    if doesFileExist(tmpPath + specFile):
-        log("i", "Reading spec file")
-        f = open(path.join(tmpPath, specFile), "r")
-        for line in f:
-            array=line.rstrip().split(';')
 
-            if not validConfig:
-                distribution=int(array[0])
-                redundancy=int(array[1])
-                salt=array[2]
-                argon_time=int(array[3])
-                argon_memory=int(array[4])
-                fileEnd=array[5]
-                validConfig=True
+def parse_spec_file():
+    """ Reads spec file and returns config values and hashes of files"""
+    valid_config = False
+    distribution = ""
+    redundancy = ""
+    salt = ""
+    argon_time = ""
+    argon_memory = ""
+    files = {}
+    if does_file_exist(path.join(TMPPATH, SPECFILE)): # pylint: disable=R1705
+        log("i", "Reading spec file")
+        file = open(path.join(TMPPATH, SPECFILE), "r")
+        for line in file:
+            array = line.rstrip().split(';')
+
+            if not valid_config:
+                distribution = int(array[0])
+                redundancy = int(array[1])
+                salt = array[2]
+                argon_time = int(array[3])
+                argon_memory = int(array[4])
+                files_extension = array[5]
+                valid_config = True
             else:
                 filename = "P" + array[0] + array[1] + "." + array[2]
-                files[filename]=array[3]
-        return files, distribution, redundancy, salt, argon_time, argon_memory, fileEnd
+                files[filename] = array[3]
+        return files, distribution, redundancy, salt, argon_time, argon_memory, files_extension
     else:
-        cleanUpWorking()
+        clean_up_working()
         log("e", "No spec file found in unpacked data!")
+    return False
 
-#####
-# Check hash of splits
-#####
-def validateFiles(files):
-    returnFiles={}
+
+def check_files_integrity(files):
+    """ takes file list and checks hash against given hash to validate file integrity"""
+    return_files = {}
     for filename in files:
-        if doesFileExist(path.join(tmpPath, filename)):
+        if does_file_exist(path.join(TMPPATH, filename)):
             log("i", "Validating part [" + filename + "]")
-            data = readFile(path.join(tmpPath, filename))
-            if generateHashFromData(data) == files[filename]:
-                log("i","Part [" + filename + "] is valid")
-                returnFiles[filename] = data
+            data = read_file(path.join(TMPPATH, filename))
+            if generate_hash_from_data(data) == files[filename]:
+                log("i", "Part [" + filename + "] is valid")
+                return_files[filename] = data
             else:
                 log("e", "Part [" + filename + "] is invalid. exciting...")
         else:
             log("i", "Skipping missing Part [" + filename + "]")
-    return returnFiles
+    return return_files
 
-#####
-# Find valid parts of split to merge
-#####
-def findValidSplit(files,redundancy):
-    lib={}
+
+def find_valid_split(files, redundancy):
+    """ Find compleat split form given splits """
+    lib = {}
     for filename in files:
-        splitId=filename[1:2]
-        if splitId not in lib.keys():
-            lib[splitId] = 1
+        split_id = filename[1:2]
+        if split_id not in lib.keys():
+            lib[split_id] = 1
         else:
-            lib[splitId]=lib[splitId] + 1
-        if lib[splitId] >= (redundancy * 3):
-            return splitId
+            lib[split_id] = lib[split_id] + 1
+        if lib[split_id] >= (redundancy * 3):
+            return split_id
     return False
 
-#####
-# Function that merges spits together
-#####
-def mergeSplits(files,splitId,redundancy):
-    tag=""
-    cipher=""
-    nonce=""
-    for i in range(0,redundancy):
-        filename="P" + str(splitId) + str(i)
-        tag+=str(files[filename + ".tag"].decode("utf-8"))
-        cipher+=str(files[filename + ".cipher"].decode("utf-8"))
-        nonce+=str(files[filename + ".nonce"].decode("utf-8"))
+
+def merge_splits(files, split_id, redundancy):
+    """ takes splits and merge them together """
+    tag = ""
+    cipher = ""
+    nonce = ""
+    for i in range(0, redundancy):
+        filename = "P" + str(split_id) + str(i)
+        tag += str(files[filename + ".tag"].decode("utf-8"))
+        cipher += str(files[filename + ".cipher"].decode("utf-8"))
+        nonce += str(files[filename + ".nonce"].decode("utf-8"))
     return b64decode(nonce), b64decode(cipher), b64decode(tag)
 
-#####
-# Decryption methode
-#####
 
-def decryptSecret(keys,splitId,ciphertext,tag,nonce):
+def decrypt_file(keys, split_id, ciphertext, tag, nonce):
+    """ Takes keys and encrypted data and returns cleartext """
     log("i", "Decrypting data...")
     try:
-        cipher = AES.new(keys[int(splitId)], AES.MODE_GCM, nonce=nonce)
+        cipher = AES.new(keys[int(split_id)], AES.MODE_GCM, nonce=nonce)
         return cipher.decrypt_and_verify(ciphertext, tag)
-    except:
+    except:  # pylint: disable=W0702
         log("e", "Some error while decryption of secret occurred! exciting...")
 
-#####
-# Save file function
-#####
-def saveFile(path, data):
-    log("i", "Save file as" + path)
-    file = open(path , 'wb')
+
+def save_file(file_path, data):
+    """ takes path and data and saves data to path """
+    log("i", "Save file as" + file_path)
+    file = open(file_path, 'wb')
     file.write(data)
     file.close()
 
-#####
-# Main encryption method
-#####
-def main_encryption():
-    makeEnvReady()
-    salt=generateRandumSalt()
-    basicConfig(salt)
-    keys = generateKeys(passphrase, salt, argon_time, argon_memory,distribution)
-    data=readFile(filePath[0])
-    encryptSecret(keys,data,redundancy)
-    createSplits()
-    cleanUpWorking()
 
-#####
-# Main decryption method
-#####
+def main_encryption():
+    """ Main routine to split and encrypt data"""
+    prepare_env()
+    salt = generate_random_salt()
+    basic_config(salt)
+    keys = generate_keys(PASSPHRASE, salt, ARGON_TIME, ARGON_MEMORY, DISTRIBUTION)
+    data = read_file(FILE_PATH[0])
+    encrypt_data(keys, data, REDUNDANCY)
+    create_splits()
+    clean_up_working()
+
+
 def main_decryption():
-    makeEnvReady()
-    unpackFiles()
-    files, distribution, redundancy, salt, argon_time, argon_memory, fileExtension = readSpecFile()
-    files = validateFiles(files)
-    completeSplitId = findValidSplit(files, redundancy)
-    if not completeSplitId:
+    """ Main routine to merge and decrypt data"""
+    prepare_env()
+    extract_files()
+    files, distribution, redundancy, salt, argon_time, argon_memory, file_extension = parse_spec_file()
+    files = check_files_integrity(files)
+    complete_split_id = find_valid_split(files, redundancy)
+    if not complete_split_id:
         log("e", "Not enough valid splits found to restore secret!")
-    nonce, cipher, tag = mergeSplits(files,completeSplitId,redundancy)
-    keys = generateKeys(passphrase,salt,argon_time,argon_memory, distribution)
-    cleartext = decryptSecret(keys,completeSplitId,cipher,tag,nonce)
-    saveFile("restored-file" + fileExtension, cleartext)
-    cleanUpWorking()
+    nonce, cipher, tag = merge_splits(files, complete_split_id, redundancy)
+    keys = generate_keys(PASSPHRASE, salt, argon_time, argon_memory, distribution)
+    cleartext = decrypt_file(keys, complete_split_id, cipher, tag, nonce)
+    save_file("restored-file" + file_extension, cleartext)
+    clean_up_working()
+
 
 #####
 # Parsing commandline arguments
 #####
-mode=""
-jumpNextArg=False
-argLen=len(sys.argv)
-filePath=[]
-for argCtr in range(1,argLen):
-    arg=sys.argv[argCtr]
-    if (argCtr+1) < argLen:
-        next_arg=sys.argv[argCtr+1]
-    if jumpNextArg:
-        jumpNextArg=False
+MODE = ""
+JUMP_TO_NEXT_ARG = False
+ARG_LEN = len(sys.argv)
+FILE_PATH = []
+for argCtr in range(1, ARG_LEN):
+    arg = sys.argv[argCtr]
+    if (argCtr + 1) < ARG_LEN:
+        next_arg = sys.argv[argCtr + 1]
+    if JUMP_TO_NEXT_ARG:
+        JUMP_TO_NEXT_ARG = False
         continue
     if arg == "-d":
-        if mode != "":
-            commandlineHelp("Enc/Dec mode selected!")
-        mode="d"
+        if MODE != "":
+            command_line_help("Enc/Dec mode selected!")
+        MODE = "d"
     elif arg == "-e":
-        if mode != "":
-            commandlineHelp("Enc/Dec mode selected!")
-        mode="e"
+        if MODE != "":
+            command_line_help("Enc/Dec mode selected!")
+        MODE = "e"
     elif arg == "-p":
-        passphrase=next_arg
-        log("i","Setting optional passphrase")
-        jumpNextArg=True
+        PASSPHRASE = next_arg
+        log("i", "Setting optional passphrase")
+        JUMP_TO_NEXT_ARG = True
     elif arg == "--argon-time":
-        argon_time=int(next_arg)
-        log("i","Setting argon time setting to " + next_arg + " rounds")
-        jumpNextArg=True
+        ARGON_TIME = int(next_arg)
+        log("i", "Setting argon time setting to " + next_arg + " rounds")
+        JUMP_TO_NEXT_ARG = True
     elif arg == "--argon-memory":
-        argon_memory=int(next_arg)
-        log("i","Setting argon memory setting to " + next_arg + "kb")
-        jumpNextArg=True
+        ARGON_MEMORY = int(next_arg)
+        log("i", "Setting argon memory setting to " + next_arg + "kb")
+        JUMP_TO_NEXT_ARG = True
     elif arg == "--distribution":
-        distribution=int(next_arg)
-        log("i","Setting distribution parts to " + next_arg + " archives")
-        jumpNextArg=True
+        DISTRIBUTION = int(next_arg)
+        log("i", "Setting distribution parts to " + next_arg + " archives")
+        JUMP_TO_NEXT_ARG = True
     elif arg == "--redundancy":
-        redundancy=int(next_arg)
-        log("i","Setting redundancy to " + next_arg + " archives")
-        jumpNextArg=True
+        REDUNDANCY = int(next_arg)
+        log("i", "Setting redundancy to " + next_arg + " archives")
+        JUMP_TO_NEXT_ARG = True
 
     else:
-        if mode == "":
-            commandlineHelp("Missing mode")
-        elif mode == "d":
-            if doesFileExist(arg):
-                filePath.append(arg)
+        if MODE == "":
+            command_line_help("Missing mode")
+        elif MODE == "d":
+            if does_file_exist(arg):
+                FILE_PATH.append(arg)
             else:
                 log("e", "Given file does not exists [" + arg + "]!")
-        elif mode == "e":
-            if len(filePath) >= 1:
-                commandlineHelp("Not supported to add multible files in encryption mode")
+        elif MODE == "e":
+            if len(FILE_PATH) >= 1:
+                command_line_help("Not supported to add multible files in encryption mode")
             else:
-                if doesFileExist(arg):
-                    filePath.append(arg)
+                if does_file_exist(arg):
+                    FILE_PATH.append(arg)
                 else:
                     log("e", "Given file does not exists [" + arg + "]!")
 
 # Prechecks
-if mode == "":
-    commandlineHelp()
-if len(filePath) == 0:
-    commandlineHelp("No file(s) to are enc/dec given")
+if MODE == "":
+    command_line_help()
+if len(FILE_PATH) == 0:
+    command_line_help("No file(s) to are enc/dec given")
 
-if passphrase == "":
-    txt=""
-    if mode == "e":
-        txt=", so files are only protected through split!"
-    log("w", "No passphrase given with the option -p" + txt)
+if PASSPHRASE == "":
+    TXT = ""
+    if MODE == "e":
+        TXT = ", so files are only protected through split!"
+    log("w", "No passphrase given with the option -p" + TXT)
 
 # Switch to modes
-if mode == "e":
+if MODE == "e":
     main_encryption()
 else:
     main_decryption()
