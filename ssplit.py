@@ -164,7 +164,7 @@ def create_splits():
     log("i", "Split secret!")
     for i in range(0, DISTRIBUTION):
         log("i", 'Generating secret split [' + str(i) + '.ss]!')
-        dist_path = TMPPATH + str(i)
+        dist_path = path.join(TMPPATH, str(i))
         os.mkdir(dist_path)
 
         # Distribute parts
