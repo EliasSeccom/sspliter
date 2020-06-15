@@ -1,11 +1,10 @@
 # Secret Splitter
 ![code quality](https://www.code-inspector.com/project/9583/status/svg)
 ![code quality](https://www.code-inspector.com/project/9583/score/svg)
-![issues](https://img.shields.io/github/issues/elias-summermatter/sspliter)
-![forks](https://img.shields.io/github/forks/elias-summermatter/sspliter)
-![stars](https://img.shields.io/github/stars/elias-summermatter/sspliter)
-![licence](https://img.shields.io/github/license/elias-summermatter/sspliter)
-![Twitter](https://img.shields.io/twitter/url?url=https%3A%2F%2Fgithub.com%2Felias-summermatter%2Fsspliter)
+![issues](https://img.shields.io/github/issues/elias-summermatter/secret-splitter)
+![forks](https://img.shields.io/github/forks/elias-summermatter/secret-splitter)
+![stars](https://img.shields.io/github/stars/elias-summermatter/secret-splitter)
+![licence](https://img.shields.io/github/license/elias-summermatter/secret-splitter)
 
 
 
