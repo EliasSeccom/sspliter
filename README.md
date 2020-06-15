@@ -1,5 +1,5 @@
-# SSplit
-Allows spliting secrets (or any other file) into n chucks for distributed storage. Restore of the secret is only possible with access to enough splits (can be defined).    
+# Secret Splitter
+Allows splitting secrets (or any other file) into n chucks for distributed storage. Restore of the secret is only possible with access to enough splits (can be defined).    
 Following cryptographic functions are used:
 - aes256: encrypt data
 - argon2: Protect passphrase from bruteforce

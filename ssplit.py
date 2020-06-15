@@ -1,8 +1,8 @@
 #!/usr/bin/python3
-""" SSpliter main code"""
+""" Secret Splitter main code"""
 #############################################################################
 #
-# SSpliter
+# Secret Splitter
 # Copyright (C) 2020  Elias Summermatter
 #
 # This program is free software: you can redistribute it and/or modify
