@@ -205,7 +205,7 @@ def encrypt_data(keys, data, split_count):
     log("i", "Encrypt file")
     for i in keys:
         if len(i) != 32:
-            continue
+            raise Exception("Generated key have not required length for encryption")
         cipher = AES.new(i, AES.MODE_GCM) # pylint: disable=E1101
         ciphertext, tag = cipher.encrypt_and_digest(data) # pylint: disable=E1101
 
